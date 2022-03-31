@@ -1,0 +1,230 @@
+#include<iostream>
+using namespace std;
+int counts[999999];
+int deep[999999];
+template<class T>
+class arrayQueue
+{
+public:
+    arrayQueue(int initialCapacity = 10){
+        arrayLength=initialCapacity;
+        queue=new T[arrayLength];
+        theFront=0;
+        theBack=0;
+    };
+    ~arrayQueue() {delete [] queue;}
+    bool empty(){return theFront == theBack;}//队列空
+    int size() {return (theBack - theFront + arrayLength) % arrayLength;}//队列中元素个数
+    T& front()//返回第一个元素
+    {if (theFront == theBack)
+            exit(1);
+        return queue[(theFront + 1) % arrayLength];
+    }
+    T& back()//最后一个元素
+    {
+        if (theFront == theBack)
+            exit(1);
+        return queue[theBack];
+    }
+    void pop()//删除队首元素
+    {
+        if (theFront == theBack)
+            exit(1);
+        theFront = (theFront + 1) % arrayLength;//theFront后移
+        queue[theFront].~T();  // 析构
+    }
+    void push(const T& theElement){//元素进队
+        if ((theBack + 1) % arrayLength == theFront){//加进去以后满了
+            T* newQueue = new T[2 * arrayLength];
+            int start = (theFront + 1) % arrayLength;
+            if (start <=1)
+                copy(queue + start, queue + start + arrayLength - 1, newQueue);//整体复制
+            else
+            {
+                copy(queue + start, queue + arrayLength, newQueue);//拆分
+                copy(queue, queue + theBack + 1, newQueue + arrayLength - start);//转了一圈回到queue开头了，这里要截断加在后面
+            }
+            theFront = 2 * arrayLength - 1;
+            theBack = arrayLength - 2;
+            arrayLength *= 2;
+            queue = newQueue;
+        }
+        theBack = (theBack + 1) % arrayLength;//否则就直接加
+        queue[theBack] = theElement;
+    };
+private:
+    int theFront;       //第一个元素位置的前一个元素下标
+    int theBack;        //最后一个元素下标
+    int arrayLength;    //容量
+    T *queue;           //队列数组
+};
+
+template <class T>
+struct binaryTreeNode
+{
+    int num;
+    T element;
+
+    binaryTreeNode<T> *leftChild,   // left subtree
+    *rightChild;  // right subtree
+
+    binaryTreeNode() {leftChild = rightChild = NULL;}
+    binaryTreeNode(int num,const T& theElement):element(theElement),num(num)
+    {
+        leftChild = rightChild = NULL;
+    }
+    binaryTreeNode(const T& theElement,
+                   binaryTreeNode *theLeftChild,
+                   binaryTreeNode *theRightChild)
+            :element(theElement)
+    {
+        leftChild = theLeftChild;
+        rightChild = theRightChild;
+    }
+};
+template<class T>
+class binaryTree{
+public:
+    binaryTree(){root=NULL;treeSize=0;}//构造函数
+    bool empty() const{return treeSize==0;}
+    int size() const{return treeSize;}
+    binaryTreeNode<T>** rootElement(){return &root;}
+    void makeTree(T* elem,int n);//构造树
+    void preOrder(binaryTreeNode<T>* t);//后序
+    void inOrder(binaryTreeNode<T>* t);//中序
+    void postOrder(binaryTreeNode<T>* t);//前序
+    int treeCount(binaryTreeNode<T> * t);//数节点个数;
+    void levelOrder(binaryTreeNode<T> *t);//层次
+    int height(binaryTreeNode<T> *t);//高度
+    void build(T* elem,int n);
+    void visit(binaryTreeNode<T> *x){
+        cout<<x->element<<' ';
+    }
+    binaryTreeNode<T> *root;
+    binaryTreeNode<T> *p;
+private:
+    int treeSize;
+};
+
+template<class T>
+int binaryTree<T>::treeCount(binaryTreeNode<T> * t)
+{
+    int n=0;
+    if(t!=NULL)
+    {
+        n=treeCount(t->leftChild)+treeCount(t->rightChild)+1;
+    }
+    return n;
+}
+template<class T>
+void binaryTree<T>::preOrder(binaryTreeNode<T> *t)
+{// Preorder traversal.
+    if (t != NULL)
+    {
+        counts[(t->element)-1]=treeCount(t);
+        deep[(t->element)-1]=height(t);
+        //binaryTree<T>::visit(t);
+        preOrder(t->leftChild);
+        preOrder(t->rightChild);
+    }
+}
+template<class T>
+void binaryTree<T>::inOrder(binaryTreeNode<T> *t)
+{// Inorder traversal.
+    if (t != NULL)
+    {
+        inOrder(t->leftChild);
+        visit(t);
+        inOrder(t->rightChild);
+    }
+}
+template<class T>
+void binaryTree<T>::postOrder(binaryTreeNode<T> *t)
+{// Postorder traversal.
+    if (t != NULL)
+    {
+        postOrder(t->leftChild);
+        postOrder(t->rightChild);
+        visit(t);
+    }
+}
+template <class T>
+void binaryTree<T>::levelOrder(binaryTreeNode<T> *t)//层次遍历
+{// Level-order traversal.
+    arrayQueue<binaryTreeNode<T>*> q;
+    while(t!=NULL){
+        visit(t);
+        if(t->leftChild!=NULL){
+            q.push(t->leftChild);
+        }
+        if(t->rightChild!=NULL){
+            q.push(t->rightChild);
+        }
+        if(q.empty()){return;}
+        q.pop();
+    }
+}
+template <class T>
+int binaryTree<T>::height(binaryTreeNode<T> *t)
+{// Return height of tree rooted at *t.
+    if (t == NULL)
+        return 0;                    // empty tree
+    int hl = height(t->leftChild);  // height of left
+    int hr = height(t->rightChild); // height of right
+    if (hl > hr)
+        return ++hl;
+    else
+        return ++hr;
+}
+template <class T>
+void binaryTree<T>::makeTree(T* elem,int n){
+    p=new binaryTreeNode<T>[n+1];
+    p[1].num=1;
+    p[1].element=1;
+    p[1].leftChild=NULL;
+    p[1].rightChild=NULL;
+    for(int i=2;i<n+1;i++){
+        p[i].num=i;
+        p[i].element=NULL;
+        p[i].leftChild=NULL;
+        p[i].rightChild=NULL;
+    }
+    for(int i=1;i<=n;i++){
+        if(elem[2*i-2]!=-1&&elem[2*i-1]!=-1){
+            p[2*i].element=elem[2*i-2];
+            p[2*i+1].element=elem[2*i-1];
+            p[i].leftChild=&p[2*i];
+            p[i].rightChild=&p[2*i+1];
+        }
+        else if(elem[2*i-2]==-1&&elem[2*i-1]!=-1){
+            p[2*i+1].element=elem[2*i-1];
+            p[i].rightChild=&p[2*i+1];
+        }
+        else if(elem[2*i-2]!=-1&&elem[2*i-1]==-1){
+            p[2*i].element=elem[2*i-2];
+            p[i].leftChild=&p[2*i];
+        }
+        else if(elem[2*i-2]==-1&&elem[2*i-1]==-1){
+        }
+    }
+    root=&p[1];
+
+}
+
+int main(){
+    int n;cin>>n;
+    int *arr=new int[2*n];
+
+    binaryTree<int> tr;
+    for(int i=0;i<2*n;i++){
+        cin>>arr[i];
+    }
+    tr.makeTree(arr,n);
+    tr.levelOrder(tr.root);
+    for(int i=1;i<=n;i++){
+        tr.treeCount(&tr.p[i]);
+    }
+    for(int i=1;i<=n;i++){
+        tr.height(&tr.p[i]);
+    }
+}
